@@ -110,15 +110,23 @@ class TestRoleplay(unittest.TestCase):
         self.aim_run = Run(repo=self.cfg.aim.repo, experiment=self.cfg.action_config.experiment_name)
         self.aim_run.set("cfg", self.cfg, strict=False)
 
+        # Mock the Action initialization to set action_cfg
+        with patch("urartu.common.action.Action.__init__") as mock_init:
+             mock_init.return_value = None
+             self.dialogue_generator = DialogueGenerator(self.cfg, self.aim_run)
+             # Manually set action_cfg as it would be done by Action.__init__
+             self.dialogue_generator.action_cfg = self.cfg.action_config
+             self.dialogue_generator.cfg = self.cfg
+             self.dialogue_generator.aim_run = self.aim_run
+
     def test_tracking_calls(self):
-        dialogue_generator = DialogueGenerator(self.cfg, self.aim_run)
         self.assertEqual(
             self.aim_run["cfg"]["action_name"],
             self.cfg.action_name,
             "Action name in AIM run config does not match the expected value",
         )
 
-        dialogue_generator.track(self.sample_inquirer_output, "test_inquirer_input")
+        self.dialogue_generator.track(self.sample_inquirer_output, "test_inquirer_input")
         text_seq = self.aim_run.get_text_sequence("test_inquirer_input", context=Context({}))
         text_record = next(iter(text_seq.data), None)
         self.assertIsNotNone(text_record, "No text records found in AIM run tracking")
@@ -138,50 +146,49 @@ class TestRoleplay(unittest.TestCase):
         mock_generate_pipe,
         mock_generate_openai,
     ):
-        dialogue_generator = DialogueGenerator(self.cfg, self.aim_run)
-        dialogue_generator.initialize()
+        self.dialogue_generator.initialize()
 
-        self.assertTrue(hasattr(dialogue_generator, "task_cfg"), "dialogue_generator is missing 'task_cfg' attribute")
-        self.assertIsNotNone(dialogue_generator.task_cfg, "'task_cfg' attribute is None")
+        self.assertTrue(hasattr(self.dialogue_generator, "task_cfg"), "dialogue_generator is missing 'task_cfg' attribute")
+        self.assertIsNotNone(self.dialogue_generator.task_cfg, "'task_cfg' attribute is None")
 
         self.assertTrue(
-            hasattr(dialogue_generator, "records_dir"), "dialogue_generator is missing 'records_dir' attribute"
+            hasattr(self.dialogue_generator, "records_dir"), "dialogue_generator is missing 'records_dir' attribute"
         )
-        self.assertIsNotNone(dialogue_generator.records_dir, "'records_dir' attribute is None")
+        self.assertIsNotNone(self.dialogue_generator.records_dir, "'records_dir' attribute is None")
 
-        self.assertTrue(hasattr(dialogue_generator, "dataset"), "dialogue_generator is missing 'dataset' attribute")
-        self.assertIsNotNone(dialogue_generator.dataset, "'dataset' attribute is None")
+        self.assertTrue(hasattr(self.dialogue_generator, "dataset"), "dialogue_generator is missing 'dataset' attribute")
+        self.assertIsNotNone(self.dialogue_generator.dataset, "'dataset' attribute is None")
         self.assertEqual(
-            dialogue_generator.dataset.dataset.num_rows,
+            self.dialogue_generator.dataset.dataset.num_rows,
             len(self.cfg.action_config.task.dataset.data.instruction),
             "Number of rows in dataset does not match expected value",
         )
 
-        self.assertTrue(hasattr(dialogue_generator, "personas"), "dialogue_generator is missing 'personas' attribute")
-        self.assertIsNotNone(dialogue_generator.personas, "'personas' attribute is None")
+        self.assertTrue(hasattr(self.dialogue_generator, "personas"), "dialogue_generator is missing 'personas' attribute")
+        self.assertIsNotNone(self.dialogue_generator.personas, "'personas' attribute is None")
         self.assertEqual(
-            len(dialogue_generator.personas),
+            len(self.dialogue_generator.personas),
             len(self.cfg.action_config.task.persona.fixed),
             "Mismatch in number of fixed personas",
         )
 
         self.assertTrue(
-            hasattr(dialogue_generator, "model_inquirer"), "dialogue_generator is missing 'model_inquirer' attribute"
+            hasattr(self.dialogue_generator, "model_inquirer"), "dialogue_generator is missing 'model_inquirer' attribute"
         )
-        self.assertIsNotNone(dialogue_generator.model_inquirer, "'model_inquirer' attribute is None")
+        self.assertIsNotNone(self.dialogue_generator.model_inquirer, "'model_inquirer' attribute is None")
         class_path = self.cfg.action_config.task.model_inquirer.type._target_
         module_name, class_name = class_path.rsplit('.', 1)
         module = importlib.import_module(module_name)
-        assert isinstance(dialogue_generator.model_inquirer, getattr(module, class_name)), f"The 'model_inquirer' should be an instance of {class_name} from {module_name}, but got {type(dialogue_generator.model_inquirer).__name__}"
+        assert isinstance(self.dialogue_generator.model_inquirer, getattr(module, class_name)), f"The 'model_inquirer' should be an instance of {class_name} from {module_name}, but got {type(self.dialogue_generator.model_inquirer).__name__}"
 
         self.assertTrue(
-            hasattr(dialogue_generator, "model_responder"), "dialogue_generator is missing 'model_responder' attribute"
+            hasattr(self.dialogue_generator, "model_responder"), "dialogue_generator is missing 'model_responder' attribute"
         )
-        self.assertIsNotNone(dialogue_generator.model_responder, "'model_responder' attribute is None")
+        self.assertIsNotNone(self.dialogue_generator.model_responder, "'model_responder' attribute is None")
         class_path = self.cfg.action_config.task.model_responder.type._target_
         module_name, class_name = class_path.rsplit('.', 1)
         module = importlib.import_module(module_name)
-        assert isinstance(dialogue_generator.model_responder, getattr(module, class_name)), f"The 'model_responder' should be an instance of {class_name} from {module_name}, but got {type(dialogue_generator.model_responder).__name__}"
+        assert isinstance(self.dialogue_generator.model_responder, getattr(module, class_name)), f"The 'model_responder' should be an instance of {class_name} from {module_name}, but got {type(self.dialogue_generator.model_responder).__name__}"
 
 
     @patch("llm_roleplay.models.model_openai.ModelOpenAI.generate")
@@ -208,13 +215,12 @@ class TestRoleplay(unittest.TestCase):
             "Device configuration does not match the expected setting",
         )
 
-        dialogue_generator = DialogueGenerator(self.cfg, self.aim_run)
-        dialogue_generator.initialize()
+        self.dialogue_generator.initialize()
 
-        dialogue_generator.model_inquirer.generate.return_value = (self.sample_inquirer_output, None)
-        dialogue_generator.model_responder.generate.return_value = (self.sample_responder_output, None)
+        self.dialogue_generator.model_inquirer.generate.return_value = (self.sample_inquirer_output, None)
+        self.dialogue_generator.model_responder.generate.return_value = (self.sample_responder_output, None)
 
-        records_dir = dialogue_generator.generate()
+        records_dir = self.dialogue_generator.generate()
         self.assertTrue(records_dir.is_dir(), "Generated records directory does not exist")
         self.assertTrue(
             (records_dir / f"{self.cfg.seed}.jsonl").exists(), "Expected jsonl file not found in records directory"
@@ -240,13 +246,12 @@ class TestRoleplay(unittest.TestCase):
         mock_generate_pipe,
         mock_generate_openai,
     ):
-        dialogue_generator = DialogueGenerator(self.cfg, self.aim_run)
-        dialogue_generator.initialize()
+        self.dialogue_generator.initialize()
 
-        dialogue_generator.model_inquirer.generate.return_value = (self.sample_inquirer_output, None)
-        dialogue_generator.model_responder.generate.return_value = (self.sample_responder_output, None)
+        self.dialogue_generator.model_inquirer.generate.return_value = (self.sample_inquirer_output, None)
+        self.dialogue_generator.model_responder.generate.return_value = (self.sample_responder_output, None)
 
-        records_dir = dialogue_generator.generate()
+        records_dir = self.dialogue_generator.generate()
 
         line_count = 0
         with (records_dir / f"{self.cfg.seed}.jsonl").open("r", encoding="utf-8") as file:
@@ -270,12 +275,12 @@ class TestRoleplay(unittest.TestCase):
             self.assertIsNotNone(utterance["model_responder"], "Model responder response is None")
 
         self.assertEqual(
-            dialogue_generator.model_inquirer.generate.call_count,
+            self.dialogue_generator.model_inquirer.generate.call_count,
             self.cfg.action_config.task.num_turns,
             "Inquirer model was not called the expected number of times",
         )
         self.assertEqual(
-            dialogue_generator.model_responder.generate.call_count,
+            self.dialogue_generator.model_responder.generate.call_count,
             self.cfg.action_config.task.num_turns,
             "Responder model was not called the expected number of times",
         )

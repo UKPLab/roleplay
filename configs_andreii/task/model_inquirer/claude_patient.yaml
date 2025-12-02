@@ -54,13 +54,14 @@ conv_template:
     4. If the therapist asks about suicide/harm directly, answer truthfully based on your Profile.
     5. Do not break character or mention that you are an AI.
     6. If you want to end the conversation naturally, use the phrase: <CONV_STOP>
+    7. ALWAYS wrap your response in double quotes.
 
     ### OPENING MESSAGE
     <OPENING>
 
   # Первое сообщение пациента (opening уже в system_prompt)
   first_turn_input: |
-    Begin the conversation with your opening message.
+    Begin the conversation with your opening message. Provide it within double quotes.
 
   # Последующие сообщения пациента
   n_th_turn_input: |
@@ -70,13 +71,15 @@ conv_template:
   response_forwarding: |
     The psychologist responded: "<RESPONSE>"
 
-    Please respond naturally to the psychologist's message. Continue the conversation about your concerns.<NEXT_PROMPT>
+    Please respond naturally to the psychologist's message. Continue the conversation about your concerns. Provide your response within double quotes.<NEXT_PROMPT>
 
   # Ответ на реплику психолога (промежуточный)
   mid_response_forwarding: |
     The psychologist responded: "<RESPONSE>"
 
-    Please respond naturally. <NEXT_PROMPT>
+    Please respond naturally. Provide your response within double quotes. <NEXT_PROMPT>
+
+  idx_of_possible_prompt: 0
 
   # Шаблон вывода модели
   model_output: |
