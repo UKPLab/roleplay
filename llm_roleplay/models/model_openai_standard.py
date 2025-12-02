@@ -162,6 +162,9 @@ class ModelOpenAIStandard(Model):
         elif self.role == "model_responder":
             # Psychologist role - providing support and guidance
             if turn == 0:
+                # Set system prompt for responder
+                self.sys_prompt = self.conv_template.system_prompt
+
                 # First turn: respond to initial patient message
                 return self.conv_template.first_turn_input.replace(
                     self.spec_tokens.objective_placeholder,
@@ -220,7 +223,7 @@ class ModelOpenAIStandard(Model):
 
         try:
             # Generate response
-            turn_response = self.model(self.history)
+            turn_response = self.model.invoke(self.history)
         except Exception as e:
             print(f"Error generating response: {e}")
             return None, None
