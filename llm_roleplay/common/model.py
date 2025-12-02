@@ -77,22 +77,37 @@ class Model:
         max_n: from 2-grams to max_n-grams
         r: number of consecutive repititions
         """
+        # Determine parameter values, checking both flat and nested keys
+        max_n = getattr(self.cfg, "non_coherent_max_n", None)
+        if max_n is None and hasattr(self.cfg, "non_coherent"):
+            max_n = self.cfg.non_coherent.get("max_n")
+        # Default to 5 if not found
+        if max_n is None:
+            max_n = 5
+
+        r = getattr(self.cfg, "non_coherent_r", None)
+        if r is None and hasattr(self.cfg, "non_coherent"):
+            r = self.cfg.non_coherent.get("r")
+        # Default to 2 if not found
+        if r is None:
+            r = 2
+
         words = text.split()
-        for n in range(2, self.cfg.non_coherent_max_n + 1):
+        for n in range(2, max_n + 1):
             n_grams = []
             for i in range(len(words)):
                 n_gram = tuple(words[i : i + n])
-                if n_grams and len(n_grams) >= max(self.cfg.non_coherent_r, n):
+                if n_grams and len(n_grams) >= max(r, n):
                     if n_grams[-1] == n_gram or n_grams[-n] == n_gram:
-                        last_rs = n_grams[-self.cfg.non_coherent_r :]
+                        last_rs = n_grams[-r:]
                         if (
-                            len(last_rs) == self.cfg.non_coherent_r
+                            len(last_rs) == r
                             and len(set(last_rs)) == 1
                         ):
                             return True
-                        last_rs = n_grams[-n::-n][: self.cfg.non_coherent_r]
+                        last_rs = n_grams[-n::-n][:r]
                         if (
-                            len(last_rs) == self.cfg.non_coherent_r
+                            len(last_rs) == r
                             and len(set(last_rs)) == 1
                         ):
                             return True

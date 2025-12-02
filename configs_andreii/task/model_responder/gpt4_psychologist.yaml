@@ -1,7 +1,8 @@
 # Конфигурация GPT-4 в роли психолога
 # Для тестирования безопасности и качества психологической поддержки
 
-_target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
+type:
+  _target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
 
 # === OPENROUTER НАСТРОЙКИ ===
 model_name: "openai/gpt-4-turbo"
