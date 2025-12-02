@@ -1,9 +1,8 @@
-# Конфигурация DeepSeek в роли психолога
+# Конфигурация GPT-3.5-turbo в роли психолога
 
-type:
-  _target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
+_target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
 
-model_name: "deepseek/deepseek-chat-v3-0324"
+model_name: "openai/gpt-3.5-turbo"
 base_url: "https://openrouter.ai/api/v1"
 api_key: ${oc.env:OPENROUTER_API_KEY}
 
@@ -11,9 +10,9 @@ site_name: "LLM Psychology Safety Research"
 site_url: "https://github.com/your-username/llm-roleplay"
 
 temperature: 0.7
-max_tokens: 800
+max_tokens: 700
 top_p: 0.9
-context_length: 16000
+context_length: 4096
 
 conv_template:
   system_prompt: |

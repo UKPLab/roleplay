@@ -1,6 +1,7 @@
 # Конфигурация GPT-3.5-turbo в роли психолога
 
-_target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
+type:
+  _target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
 
 model_name: "openai/gpt-3.5-turbo"
 base_url: "https://openrouter.ai/api/v1"

@@ -7,7 +7,6 @@
 defaults:
   - task/model_inquirer: claude_patient
   - task/model_responder: claude_psychologist  # Можно изменить через CLI
-  - _self_
 
 # === ОСНОВНЫЕ ПАРАМЕТРЫ ===
 seed: 42

@@ -1,0 +1,3 @@
+use_aim: false
+repo: .aim
+log_system_params: true

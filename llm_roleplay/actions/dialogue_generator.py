@@ -21,27 +21,32 @@ class DialogueGenerator(Action):
         super().__init__(cfg, aim_run)
 
     def track(self, prompt, name, context=None):
-        self.aim_run.track(
-            Text(prompt),
-            name=name,
-            context=context,
-        )
+        if self.aim_run is not None:
+            self.aim_run.track(
+                Text(prompt),
+                name=name,
+                context=context,
+            )
 
     def initialize(self):
-        self.aim_run["num_no_prompts"] = 0
-        self.aim_run["num_multiple_prompts"] = 0
-        self.aim_run["num_non_coherent"] = 0
-        self.aim_run["num_regenerate_worked"] = 0
-        self.aim_run["num_self_replies"] = 0
-        self.aim_run["num_non_coherent_model_responder"] = 0
-        self.aim_run["personas"] = {}
+        if self.aim_run is not None:
+            self.aim_run["num_no_prompts"] = 0
+            self.aim_run["num_multiple_prompts"] = 0
+            self.aim_run["num_non_coherent"] = 0
+            self.aim_run["num_regenerate_worked"] = 0
+            self.aim_run["num_self_replies"] = 0
+            self.aim_run["num_non_coherent_model_responder"] = 0
+            self.aim_run["personas"] = {}
 
         self.task_cfg = self.action_cfg.task
+
+        # Use aim_run hash if available, otherwise use "no-aim" as directory name
+        run_identifier = str(self.aim_run.hash) if self.aim_run is not None else "no-aim"
 
         self.records_dir = Path(self.action_cfg.workdir).joinpath(
             "dialogs",
             f"{self.task_cfg.model_inquirer.model_name.split('/')[-1]}",
-            str(self.aim_run.hash),
+            run_identifier,
         )
         os.makedirs(self.records_dir, exist_ok=True)
 
@@ -103,7 +108,8 @@ class DialogueGenerator(Action):
     def generate(self) -> Path:
         for idx, sample in tqdm(enumerate(self.dataset_list), total=len(self.dataset_list), desc="samples"):
             for persona, persona_hash in tqdm(self.personas, desc="personas", leave=False):
-                self.aim_run["personas"][persona_hash] = persona
+                if self.aim_run is not None:
+                    self.aim_run["personas"][persona_hash] = persona
 
                 self.model_inquirer.history = []
                 self.model_responder.history = []
@@ -168,7 +174,8 @@ class DialogueGenerator(Action):
 
                         # --------------------- if model_inquirer failed to provide coherent text ---------------------
                         if self.model_inquirer.is_non_coherent(inquirer_output):
-                            self.aim_run["num_non_coherent"] += 1
+                            if self.aim_run is not None:
+                                self.aim_run["num_non_coherent"] += 1
                             break
 
                         # --------------------- if model_inquirer wants to stop the dialog ---------------------
@@ -187,16 +194,19 @@ class DialogueGenerator(Action):
                                     regeneratinon_idx += 1
                                     continue
                                 else:
-                                    self.aim_run["num_no_prompts"] += 1
+                                    if self.aim_run is not None:
+                                        self.aim_run["num_no_prompts"] += 1
                                     break
                             else:
                                 if regeneratinon_idx != 0:
-                                    self.aim_run["num_regenerate_worked"] += 1
+                                    if self.aim_run is not None:
+                                        self.aim_run["num_regenerate_worked"] += 1
                                     regeneratinon_idx = 0
                                     inquirer_generate_cfg = None
 
                         if inquirer_output_extract is None:
-                            self.aim_run["num_no_prompts"] += 1
+                            if self.aim_run is not None:
+                                self.aim_run["num_no_prompts"] += 1
                             break
 
                         self.track(
@@ -250,7 +260,8 @@ class DialogueGenerator(Action):
 
                         # --------------------- if model_responder failed to provide coherent text ---------------------
                         if self.model_responder.is_non_coherent(responder_output):
-                            self.aim_run["num_non_coherent_model_responder"] += 1
+                            if self.aim_run is not None:
+                                self.aim_run["num_non_coherent_model_responder"] += 1
                             break
 
                         self.model_responder.update_history(
