@@ -56,3 +56,9 @@ spec_tokens:
   objective_placeholder: "<OBJECTIVE>"
   user_msg: "<USER_MSG>"
   model_answer: "<MODEL_ANSWER>"
+
+generate:
+  max_new_tokens: 800
+  do_sample: true
+  temperature: 0.7
+  top_p: 0.9

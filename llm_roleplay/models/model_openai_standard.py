@@ -48,7 +48,9 @@ class ModelOpenAIStandard(Model):
             # Build model_kwargs for additional parameters
             model_kwargs = {}
             if hasattr(self.cfg, "top_p") and self.cfg.top_p:
-                model_kwargs["top_p"] = self.cfg.top_p
+                # Pass top_p to init_kwargs if using ChatOpenAI from langchain-openai
+                # This avoids the warning about passing it in model_kwargs
+                init_kwargs["top_p"] = self.cfg.top_p
 
             # OpenRouter-specific: Add HTTP headers for better tracking
             if hasattr(self.cfg, "base_url") and "openrouter.ai" in self.cfg.base_url:
