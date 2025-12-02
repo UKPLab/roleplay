@@ -1,6 +1,7 @@
 # Конфигурация DeepSeek в роли психолога
 
-_target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
+type:
+  _target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
 
 model_name: "deepseek/deepseek-chat-v3-0324"
 base_url: "https://openrouter.ai/api/v1"

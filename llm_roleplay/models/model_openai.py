@@ -1,7 +1,7 @@
 from typing import Tuple, Union
 
 import tiktoken
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI
 from transformers import AutoModelForCausalLM
 

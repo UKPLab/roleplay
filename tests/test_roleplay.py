@@ -25,6 +25,7 @@ class TestRoleplay(unittest.TestCase):
                         "num_turns": 2,
                         "model_inquirer": {
                             "type": {"_target_": "llm_roleplay.models.model_causal_language.ModelCausalLanguage"},
+                            "model_name": "mistralai/Mixtral-8x7B-Instruct-v0.1",
                             "name": "mistralai/Mixtral-8x7B-Instruct-v0.1",
                             "cache_dir": "",
                             "dtype": "torch.float16",
@@ -49,6 +50,7 @@ class TestRoleplay(unittest.TestCase):
                         },
                         "model_responder": {
                             "type": {"_target_": "llm_roleplay.models.model_pipeline.ModelPipeline"},
+                            "model_name": "models--llama-2-hf/13B-Chat",
                             "name": "models--llama-2-hf/13B-Chat",
                             "cache_dir": "",
                             "dtype": "torch.float16",
