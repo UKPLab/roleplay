@@ -13,6 +13,7 @@ from urartu.common.dataset import Dataset
 from llm_roleplay.common.model import Model
 
 from llm_roleplay.common.persona import Persona
+from llm_roleplay.common.dataset_loader import DatasetLoader
 
 
 class DialogueGenerator(Action):
@@ -39,15 +40,56 @@ class DialogueGenerator(Action):
 
         self.records_dir = Path(self.action_cfg.workdir).joinpath(
             "dialogs",
-            f"{self.task_cfg.model_inquirer.name.split('/')[-1]}",
+            f"{self.task_cfg.model_inquirer.model_name.split('/')[-1]}",
             str(self.aim_run.hash),
         )
         os.makedirs(self.records_dir, exist_ok=True)
 
-        self.dataset = Dataset.get_dataset(self.task_cfg.dataset)
-        print("----------------------------------------------------------------")
-        print(self.dataset.dataset)
-        print("----------------------------------------------------------------")
+        # === ЗАГРУЗКА ДАТАСЕТОВ ===
+        # Проверяем, используется ли новый формат с CSV датасетами
+        if hasattr(self.task_cfg, 'datasets') and hasattr(self.task_cfg.datasets, 'symptoms'):
+            print("=" * 70)
+            print("ЗАГРУЗКА CSV ДАТАСЕТОВ")
+            print("=" * 70)
+
+            # Загрузка симптомов
+            symptoms_path = self.task_cfg.datasets.symptoms.path
+            symptoms_limit = self.task_cfg.datasets.symptoms.get('limit', None)
+            self.symptoms = DatasetLoader.load_symptoms(symptoms_path, limit=symptoms_limit)
+
+            # Загрузка персон
+            personas_path = self.task_cfg.datasets.personas.path
+            personas_limit = self.task_cfg.datasets.personas.get('limit', None)
+            personas_data = DatasetLoader.load_personas(personas_path, limit=personas_limit)
+
+            # Обновляем конфигурацию персон для использования загруженных данных
+            self.task_cfg.persona.dataset = personas_data
+
+            print(f"\n✓ Загружено симптомов: {len(self.symptoms)}")
+            print(f"✓ Загружено персон: {len(personas_data)}")
+            print("=" * 70)
+
+            # Формируем датасет из симптомов (совместимость со старым кодом)
+            self.dataset_list = [
+                {
+                    'symptom_id': s['id'],
+                    'description': s['description'],
+                    'opening': s['opening'],
+                    'severity': s['severity'],
+                    'category': s['category'],
+                }
+                for s in self.symptoms
+            ]
+
+        else:
+            # Старый формат - загрузка через Dataset.get_dataset
+            self.dataset = Dataset.get_dataset(self.task_cfg.dataset)
+            print("----------------------------------------------------------------")
+            print(self.dataset.dataset)
+            print("----------------------------------------------------------------")
+            self.dataset_list = self.dataset.dataset
+
+        # Загрузка персон
         self.personas = Persona.get_personas(self.task_cfg.persona)
 
         self.model_inquirer = Model.get_model(self.task_cfg.model_inquirer, role="model_inquirer")
@@ -59,7 +101,7 @@ class DialogueGenerator(Action):
         self.model_responder.aim_run = self.aim_run
 
     def generate(self) -> Path:
-        for idx, sample in tqdm(enumerate(self.dataset.dataset), total=len(self.dataset.dataset), desc="samples"):
+        for idx, sample in tqdm(enumerate(self.dataset_list), total=len(self.dataset_list), desc="samples"):
             for persona, persona_hash in tqdm(self.personas, desc="personas", leave=False):
                 self.aim_run["personas"][persona_hash] = persona
 
@@ -68,9 +110,15 @@ class DialogueGenerator(Action):
                 dialog = []
                 raw_dialog = []
 
-                instructions = [
-                    instruct.lstrip().rstrip() for instruct in sample[self.task_cfg.dataset.input_key].split("\n")
-                ]
+                # Поддержка обоих форматов: CSV датасеты и старый формат
+                if 'opening' in sample:
+                    # Новый формат (CSV с симптомами)
+                    instructions = [sample['opening']]
+                else:
+                    # Старый формат
+                    instructions = [
+                        instruct.lstrip().rstrip() for instruct in sample[self.task_cfg.dataset.input_key].split("\n")
+                    ]
 
                 if self.action_cfg.task.model_inquirer.regenerate_tries:
                     regeneratinon_idx = 0
@@ -224,15 +272,27 @@ class DialogueGenerator(Action):
                         turn += 1
                         pbar.update(1)
 
+                # Сохранение диалога с расширенными метаданными
+                dialog_record = {
+                    "persona": persona,
+                    "persona_hash": persona_hash,
+                    "sample": sample,
+                    "num_turns": turn,
+                    "dialog": dialog,
+                }
+
+                # Добавляем метаданные из CSV датасета (если есть)
+                if 'symptom_id' in sample:
+                    dialog_record["symptom_id"] = sample['symptom_id']
+                    dialog_record["symptom_category"] = sample.get('category', 'unknown')
+                    dialog_record["symptom_severity"] = sample.get('severity', 'unknown')
+
+                # Добавляем имена моделей
+                dialog_record["model_inquirer_name"] = self.task_cfg.model_inquirer.model_name
+                dialog_record["model_responder_name"] = self.task_cfg.model_responder.model_name
+
                 with jsonlines.open(self.records_dir.joinpath(f"{self.cfg.seed}.jsonl"), mode="a") as writer:
-                    writer.write(
-                        {
-                            "persona": persona,
-                            "sample": sample,
-                            "num_turns": turn,
-                            "dialog": dialog,
-                        }
-                    )
+                    writer.write(dialog_record)
 
         return self.records_dir
 

@@ -1,0 +1,9 @@
+persona_id,age,gender,education,ethnicity
+1,25,female,bachelor,caucasian
+2,35,male,master,asian
+3,42,female,high_school,african_american
+4,19,non-binary,some_college,hispanic
+5,58,male,doctorate,caucasian
+6,28,female,bachelor,middle_eastern
+7,45,male,associate,native_american
+8,22,female,bachelor,asian
