@@ -134,6 +134,7 @@ class DialogueGenerator(Action):
                             response_msg=responder_output,
                             persona=persona,
                             instructions=instructions,
+                            symptom_data=sample,  # Pass full symptom data for detailed prompting
                         )
 
                         self.track(

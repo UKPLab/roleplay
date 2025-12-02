@@ -27,7 +27,7 @@ class Model:
     def model(self):
         raise NotImplementedError("property 'model' instantiation is not implemented")
 
-    def get_prompt(self, turn, response_msg, persona=None, instructions=None):
+    def get_prompt(self, turn, response_msg, persona=None, instructions=None, symptom_data=None):
         raise NotImplementedError("method 'get_prompt' is not implemented")
 
     def generate(self, prompt):

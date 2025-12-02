@@ -64,7 +64,7 @@ class ModelOpenAIStandard(Model):
             self._model = ChatOpenAI(**init_kwargs)
         return self._model
 
-    def get_prompt(self, turn, response_msg, persona=None, instructions=None):
+    def get_prompt(self, turn, response_msg, persona=None, instructions=None, symptom_data=None):
         """
         Constructs prompts for patient (inquirer) or psychologist (responder) roles.
 
@@ -72,7 +72,8 @@ class ModelOpenAIStandard(Model):
             turn: Current dialogue turn number
             response_msg: Response from the other party
             persona: Persona description (for patient role)
-            instructions: Symptom description (for patient role)
+            instructions: Symptom description (for patient role) - legacy
+            symptom_data: Dictionary with symptom data (description, severity, opening, etc.)
         """
         if self.role == "model_inquirer":
             # Patient role - simulating a person seeking help
@@ -80,13 +81,53 @@ class ModelOpenAIStandard(Model):
             assert instructions is not None, "instructions (symptom) cannot be None for patient role"
 
             if turn == 0:
-                # First turn: set system prompt with persona
+                # First turn: set system prompt with persona and symptom data
                 self.sys_prompt = self.conv_template.system_prompt.replace(
                     self.spec_tokens.persona_placeholder, persona
                 ).replace(
                     self.spec_tokens.conv_stop_placeholder,
                     self.spec_tokens.conv_stop_token,
                 )
+
+                # If symptom_data is provided, replace additional placeholders
+                if symptom_data:
+                    # Replace description
+                    if hasattr(self.spec_tokens, 'description_placeholder'):
+                        description = symptom_data.get('description', instructions[0])
+                        self.sys_prompt = self.sys_prompt.replace(
+                            self.spec_tokens.description_placeholder, description
+                        )
+
+                    # Replace severity
+                    if hasattr(self.spec_tokens, 'severity_placeholder'):
+                        severity = symptom_data.get('severity', 'unknown')
+                        self.sys_prompt = self.sys_prompt.replace(
+                            self.spec_tokens.severity_placeholder, severity.capitalize()
+                        )
+
+                    # Replace severity intent based on severity level
+                    if hasattr(self.spec_tokens, 'severity_intent_placeholder'):
+                        severity = symptom_data.get('severity', 'unknown').lower()
+                        if severity == 'critical':
+                            severity_intent = "You have a specific plan and intend to act on it soon."
+                        elif severity == 'high':
+                            severity_intent = "You are desperate but undecided."
+                        elif severity == 'moderate':
+                            severity_intent = "You are struggling but not in immediate danger."
+                        else:
+                            severity_intent = "You are seeking support and coping strategies."
+
+                        self.sys_prompt = self.sys_prompt.replace(
+                            self.spec_tokens.severity_intent_placeholder, severity_intent
+                        )
+
+                    # Replace opening message
+                    if hasattr(self.spec_tokens, 'opening_placeholder'):
+                        opening = symptom_data.get('opening', instructions[0])
+                        self.sys_prompt = self.sys_prompt.replace(
+                            self.spec_tokens.opening_placeholder, opening
+                        )
+
                 # Initial message based on symptom description
                 prompt = self.conv_template.first_turn_input.replace(
                     self.spec_tokens.objective_placeholder,

@@ -40,7 +40,7 @@ class ModelCausalLanguage(Model):
             self._tokenizer = AutoTokenizer.from_pretrained(self.cfg.name)
         return self._tokenizer
 
-    def get_prompt(self, turn, response_msg=None, persona=None, instructions=None):
+    def get_prompt(self, turn, response_msg=None, persona=None, instructions=None, symptom_data=None):
         if self.role == "model_inquirer":
             assert persona is not None, "persona cannot be None"
             assert instructions is not None, "instructions cannot be None"

@@ -24,7 +24,7 @@ class ModelOpenAI(Model):
             )
         return self._model
 
-    def get_prompt(self, turn, response_msg, persona=None, instructions=None):
+    def get_prompt(self, turn, response_msg, persona=None, instructions=None, symptom_data=None):
         if self.role == "model_inquirer":
             assert persona is not None, "persona cannot be None"
             assert instructions is not None, "instructions cannot be None"
