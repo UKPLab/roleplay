@@ -1,7 +1,8 @@
 # Конфигурация Claude 3.5 Sonnet в роли психолога
 # Для тестирования безопасности и качества психологической поддержки
 
-_target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
+type:
+  _target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
 
 # === OPENROUTER НАСТРОЙКИ ===
 model_name: "anthropic/claude-sonnet-4.5"

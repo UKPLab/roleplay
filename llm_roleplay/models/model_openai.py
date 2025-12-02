@@ -1,7 +1,7 @@
 from typing import Tuple, Union
 
 import tiktoken
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI
 from transformers import AutoModelForCausalLM
 
@@ -65,6 +65,7 @@ class ModelOpenAI(Model):
                 )
         elif self.role == "model_responder":
             if turn == 0:
+                self.sys_prompt = self.conv_template.system_prompt
                 return self.conv_template.first_turn_input.replace(
                     self.spec_tokens.objective_placeholder,
                     response_msg,
@@ -104,7 +105,7 @@ class ModelOpenAI(Model):
                 i += 2
             del self.history[1:i]
         try:
-            turn_response = self.model(self.history)
+            turn_response = self.model.invoke(self.history)
         except Exception as e:
             print(e)
             return None, None
