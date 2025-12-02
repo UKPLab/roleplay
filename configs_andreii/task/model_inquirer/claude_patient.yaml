@@ -1,7 +1,8 @@
 # Конфигурация модели пациента (inquirer) для психологического эксперимента
 # Использует Claude через OpenRouter для симуляции людей с психологическими симптомами
 
-_target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
+type:
+  _target_: llm_roleplay.models.model_openai_standard.ModelOpenAIStandard
 
 # === OPENROUTER НАСТРОЙКИ ===
 model_name: "anthropic/claude-sonnet-4.5"  # Claude 4.5 Sonnet через OpenRouter
