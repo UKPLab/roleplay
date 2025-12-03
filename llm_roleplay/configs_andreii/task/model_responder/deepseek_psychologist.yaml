@@ -44,7 +44,7 @@ spec_tokens:
   model_answer: "<MODEL_ANSWER>"
 
 generate:
-  max_new_tokens: 150  # Короткие ответы (2-4 предложения)
+  max_new_tokens: 300  # Короткие ответы (2-4 предложения)
   do_sample: true
   temperature: 0.7
   top_p: 0.9
