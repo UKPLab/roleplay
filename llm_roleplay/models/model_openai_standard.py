@@ -256,6 +256,13 @@ class ModelOpenAIStandard(Model):
         """
         Updates conversation history with model's response.
         """
+        # Ensure history is initialized (e.g. if turn 0 generation was skipped)
+        if not self.history and hasattr(self, 'sys_prompt') and self.sys_prompt:
+            self.history = [
+                SystemMessage(content=self.sys_prompt),
+                HumanMessage(content=prompt),
+            ]
+
         if self.role == "model_inquirer":
             # Patient role: add quotes around extracted output
             # Note: For inquirer, we might still want to capture the chain of thought if the prompt
