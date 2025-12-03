@@ -33,10 +33,10 @@ action_config:
     datasets:
       symptoms:
         path: "data/symptoms.csv"
-        limit: 2
+        limit: 1
       personas:
         path: "data/personas.csv"
-        limit: 2
+        limit: 1
 
     # Конфигурация персон
     persona:
