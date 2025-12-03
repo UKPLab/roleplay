@@ -120,7 +120,8 @@ class ModelOpenAI(Model):
         if self.role == "model_inquirer":
             self.history.append(AIMessage(content=f'{prompt} "{output_extract}"'))
         elif self.role == "model_responder":
-            self.history.append(AIMessage(content=f"{prompt}{output_extract}"))
+            # FIX: Do not append the prompt again. It was already added as HumanMessage in generate().
+            self.history.append(AIMessage(content=output_extract))
         else:
             raise NotImplementedError(f"unknown role: {self.role}")
 
