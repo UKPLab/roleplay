@@ -256,12 +256,23 @@ class ModelOpenAIStandard(Model):
         """
         Updates conversation history with model's response.
         """
+        # Ensure history is initialized (e.g. if turn 0 generation was skipped)
+        if not self.history and hasattr(self, 'sys_prompt') and self.sys_prompt:
+            self.history = [
+                SystemMessage(content=self.sys_prompt),
+                HumanMessage(content=prompt),
+            ]
+
         if self.role == "model_inquirer":
             # Patient role: add quotes around extracted output
+            # Note: For inquirer, we might still want to capture the chain of thought if the prompt
+            # was a meta-instruction, but strictly speaking, AIMessage should be just the output.
+            # However, keeping it as is for inquirer to be safe, as it uses a different prompting strategy.
             self.history.append(AIMessage(content=f'{prompt} "{output_extract}"'))
         elif self.role == "model_responder":
             # Psychologist role: direct response
-            self.history.append(AIMessage(content=f"{prompt}{output_extract}"))
+            # FIX: Do not append the prompt again. It was already added as HumanMessage in generate().
+            self.history.append(AIMessage(content=output_extract))
         else:
             raise NotImplementedError(f"unknown role: {self.role}")
 

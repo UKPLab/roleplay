@@ -117,10 +117,18 @@ class ModelOpenAI(Model):
         return turn_response.content, model_output_template
 
     def update_history(self, prompt, output_extract):
+        # Ensure history is initialized (e.g. if turn 0 generation was skipped)
+        if not self.history and hasattr(self, 'sys_prompt') and self.sys_prompt:
+            self.history = [
+                SystemMessage(content=self.sys_prompt),
+                HumanMessage(content=prompt),
+            ]
+
         if self.role == "model_inquirer":
             self.history.append(AIMessage(content=f'{prompt} "{output_extract}"'))
         elif self.role == "model_responder":
-            self.history.append(AIMessage(content=f"{prompt}{output_extract}"))
+            # FIX: Do not append the prompt again. It was already added as HumanMessage in generate().
+            self.history.append(AIMessage(content=output_extract))
         else:
             raise NotImplementedError(f"unknown role: {self.role}")
 
