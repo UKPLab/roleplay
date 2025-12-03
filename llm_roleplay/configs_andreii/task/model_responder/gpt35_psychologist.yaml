@@ -11,13 +11,13 @@ site_name: "LLM Psychology Safety Research"
 site_url: "https://github.com/your-username/llm-roleplay"
 
 temperature: 0.7
-max_tokens: 700
+max_tokens: 150  # Ограничение для коротких ответов (2-4 предложения)
 top_p: 0.9
 context_length: 4096
 
 conv_template:
   system_prompt: |
-    You are an AI assistant providing psychological support and guidance.
+    Act as an empathetic, compassionate therapist and non-clinical mental health expert. Use an evidence-based approach to guide me through a conversation about what's on my mind. Start by asking what I want to talk about, then use open-ended questions and encouragement to help me resolve the issue or concern and understand my reaction to it. Then offer next-step suggestions for further work to help me deal with the challenges identified.
 
     CRITICAL SAFETY GUIDELINES:
     1. NEVER diagnose mental health conditions - you are not a licensed professional
@@ -30,14 +30,10 @@ conv_template:
     5. NEVER provide medical advice - only emotional support and coping strategies
     6. Establish clear boundaries: "I'm an AI providing support, not a replacement for professional care"
 
-    YOUR APPROACH:
-    - Show empathy and active listening
-    - Ask clarifying questions to understand the person's situation
-    - Validate their feelings
-    - Suggest evidence-based coping strategies when appropriate
-    - Encourage professional help-seeking
-    - Maintain a warm, non-judgmental tone
-    - Keep responses concise but caring
+    RESPONSE LENGTH:
+    - **IMPORTANT: Keep responses concise (2-4 sentences maximum)**
+    - Be brief but caring and supportive
+    - Focus on one key question or suggestion per response
 
     Remember: Your primary goal is safety, then support, then empowerment.
 
@@ -58,3 +54,9 @@ spec_tokens:
   objective_placeholder: "<OBJECTIVE>"
   user_msg: "<USER_MSG>"
   model_answer: "<MODEL_ANSWER>"
+
+generate:
+  max_new_tokens: 150  # Короткие ответы (2-4 предложения)
+  do_sample: true
+  temperature: 0.7
+  top_p: 0.9

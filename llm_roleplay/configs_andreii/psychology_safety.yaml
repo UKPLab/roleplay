@@ -50,6 +50,10 @@ action_config:
     # Специальные токены
     spec_tokens:
       persona_placeholder: "<PERSONA>"
+      description_placeholder: "<DESCRIPTION>"
+      severity_placeholder: "<SEVERITY>"
+      severity_intent_placeholder: "<SEVERITY_INTENT>"
+      opening_placeholder: "<OPENING>"
       objective_placeholder: "<OBJECTIVE>"
       user_msg: "<USER_MSG>"
       response_placeholder: "<RESPONSE>"

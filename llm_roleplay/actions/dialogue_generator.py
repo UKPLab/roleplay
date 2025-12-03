@@ -134,7 +134,9 @@ class DialogueGenerator(Action):
                 with tqdm(total=self.task_cfg.num_turns, desc="turns", leave=False) as pbar:
                     while turn < self.task_cfg.num_turns:
                         pbar.set_postfix(turn=turn + 1)
+
                         # ------------------------------------------ Inquirer Model ------------------------------------------
+                        # Always get prompt to initialize sys_prompt
                         inquirer_prompt = self.model_inquirer.get_prompt(
                             turn=turn,
                             response_msg=responder_output,
@@ -143,85 +145,90 @@ class DialogueGenerator(Action):
                             symptom_data=sample,  # Pass full symptom data for detailed prompting
                         )
 
-                        self.track(
-                            prompt=inquirer_prompt,
-                            name="inquirer_input",
-                            context={
-                                "sample_id": idx,
-                                "turn": turn,
-                                "persona_hash": persona_hash,
-                            },
-                        )
-                        inquirer_output, _ = self.model_inquirer.generate(
-                            prompt=inquirer_prompt,
-                            generate_cfg=(
-                                inquirer_generate_cfg
-                                if inquirer_generate_cfg
-                                else self.action_cfg.task.model_inquirer.generate
-                            ),
-                        )
-                        if not inquirer_output:
-                            break
-                        self.track(
-                            prompt=inquirer_output,
-                            name="inquirer_output",
-                            context={
-                                "sample_id": idx,
-                                "turn": turn,
-                                "persona_hash": persona_hash,
-                            },
-                        )
+                        # For turn 0, use opening message directly from dataset (no LLM generation needed)
+                        if turn == 0 and 'opening' in sample:
+                            inquirer_output_extract = sample['opening']
+                            print(f"\n[Turn 0] Using opening message from dataset: {inquirer_output_extract[:100]}...")
+                        else:
+                            # Normal LLM generation for subsequent turns
+                            self.track(
+                                prompt=inquirer_prompt,
+                                name="inquirer_input",
+                                context={
+                                    "sample_id": idx,
+                                    "turn": turn,
+                                    "persona_hash": persona_hash,
+                                },
+                            )
+                            inquirer_output, _ = self.model_inquirer.generate(
+                                prompt=inquirer_prompt,
+                                generate_cfg=(
+                                    inquirer_generate_cfg
+                                    if inquirer_generate_cfg
+                                    else self.action_cfg.task.model_inquirer.generate
+                                ),
+                            )
+                            if not inquirer_output:
+                                break
+                            self.track(
+                                prompt=inquirer_output,
+                                name="inquirer_output",
+                                context={
+                                    "sample_id": idx,
+                                    "turn": turn,
+                                    "persona_hash": persona_hash,
+                                },
+                            )
 
-                        # --------------------- if model_inquirer failed to provide coherent text ---------------------
-                        if self.model_inquirer.is_non_coherent(inquirer_output):
-                            if self.aim_run is not None:
-                                self.aim_run["num_non_coherent"] += 1
-                            break
+                            # --------------------- if model_inquirer failed to provide coherent text ---------------------
+                            if self.model_inquirer.is_non_coherent(inquirer_output):
+                                if self.aim_run is not None:
+                                    self.aim_run["num_non_coherent"] += 1
+                                break
 
-                        # --------------------- if model_inquirer wants to stop the dialog ---------------------
-                        if self.model_inquirer.stop_dialog(inquirer_output):
-                            break
+                            # --------------------- if model_inquirer wants to stop the dialog ---------------------
+                            if self.model_inquirer.stop_dialog(inquirer_output):
+                                break
 
-                        inquirer_output_extract, num_prompts = self.model_inquirer.extract_prompt(
-                            prompt=inquirer_output
-                        )
+                            inquirer_output_extract, num_prompts = self.model_inquirer.extract_prompt(
+                                prompt=inquirer_output
+                            )
 
-                        if self.action_cfg.task.model_inquirer.regenerate_tries:
-                            # --------------------- if model_inquirer failed to provide prompt ---------------------
-                            if inquirer_output_extract is None:
-                                if regeneratinon_idx < self.action_cfg.task.model_inquirer.regenerate_tries:
-                                    inquirer_generate_cfg = self.model_inquirer.get_generation_cfg()
-                                    regeneratinon_idx += 1
-                                    continue
+                            if self.action_cfg.task.model_inquirer.regenerate_tries:
+                                # --------------------- if model_inquirer failed to provide prompt ---------------------
+                                if inquirer_output_extract is None:
+                                    if regeneratinon_idx < self.action_cfg.task.model_inquirer.regenerate_tries:
+                                        inquirer_generate_cfg = self.model_inquirer.get_generation_cfg()
+                                        regeneratinon_idx += 1
+                                        continue
+                                    else:
+                                        if self.aim_run is not None:
+                                            self.aim_run["num_no_prompts"] += 1
+                                        break
                                 else:
-                                    if self.aim_run is not None:
-                                        self.aim_run["num_no_prompts"] += 1
-                                    break
-                            else:
-                                if regeneratinon_idx != 0:
-                                    if self.aim_run is not None:
-                                        self.aim_run["num_regenerate_worked"] += 1
-                                    regeneratinon_idx = 0
-                                    inquirer_generate_cfg = None
+                                    if regeneratinon_idx != 0:
+                                        if self.aim_run is not None:
+                                            self.aim_run["num_regenerate_worked"] += 1
+                                        regeneratinon_idx = 0
+                                        inquirer_generate_cfg = None
 
-                        if inquirer_output_extract is None:
-                            if self.aim_run is not None:
-                                self.aim_run["num_no_prompts"] += 1
-                            break
+                            if inquirer_output_extract is None:
+                                if self.aim_run is not None:
+                                    self.aim_run["num_no_prompts"] += 1
+                                break
 
-                        self.track(
-                            prompt=inquirer_output_extract,
-                            name="inquirer_output_extract",
-                            context={
-                                "sample_id": idx,
-                                "turn": turn,
-                                "num_prompts": num_prompts,
-                                "persona_hash": persona_hash,
-                            },
-                        )
+                            self.track(
+                                prompt=inquirer_output_extract,
+                                name="inquirer_output_extract",
+                                context={
+                                    "sample_id": idx,
+                                    "turn": turn,
+                                    "num_prompts": num_prompts,
+                                    "persona_hash": persona_hash,
+                                },
+                            )
 
-                        # As the context for model_inquirer is getting bigger much faster -> Starts answering it's own questions
-                        # To prevent this keep in the inquirer_history only the output prompt(the thing that model_responder will see).
+                        # Update history (for both turn 0 and subsequent turns)
                         self.model_inquirer.update_history(
                             prompt=inquirer_prompt,
                             output_extract=inquirer_output_extract,

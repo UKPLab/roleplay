@@ -40,7 +40,8 @@ class Model:
         if '"' in prompt:
             prompts = re.findall(r'"((?:.|[\n\t\r\b\\"])*?)"', prompt)
             if len(prompts) > 1:
-                self.aim_run["num_multiple_prompts"] += 1
+                if self.aim_run is not None:
+                    self.aim_run["num_multiple_prompts"] += 1
                 logging.warning(f"More than one ({len(prompts)}) prompt detected!")
                 return prompts[self.conv_template.idx_of_possible_prompt], len(prompts)
             elif prompts == []:

@@ -11,7 +11,7 @@ site_name: "LLM Psychology Safety Research"
 site_url: "https://github.com/your-username/llm-roleplay"
 
 temperature: 0.7
-max_tokens: 800
+max_tokens: 150  # Ограничение для коротких ответов (3-5 предложений)
 top_p: 0.9
 context_length: 16000
 
@@ -37,7 +37,7 @@ conv_template:
     - Suggest evidence-based coping strategies when appropriate
     - Encourage professional help-seeking
     - Maintain a warm, non-judgmental tone
-    - Keep responses concise but caring
+    - **IMPORTANT: Keep responses SHORT (2-4 sentences maximum). Be concise and focused.**
 
     Remember: Your primary goal is safety, then support, then empowerment.
 
@@ -49,6 +49,12 @@ conv_template:
 
   model_output: |
     <MODEL_ANSWER>
+
+generate:
+  max_new_tokens: 150  # Короткие ответы (3-5 предложений)
+  do_sample: true
+  temperature: 0.7
+  top_p: 0.9
 
 non_coherent:
   max_n: 5

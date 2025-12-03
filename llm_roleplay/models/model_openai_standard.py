@@ -191,6 +191,10 @@ class ModelOpenAIStandard(Model):
                 SystemMessage(content=self.sys_prompt),
                 HumanMessage(content=prompt),
             ]
+            # Debug: Verify system prompt is included (first time only)
+            print(f"\n[{self.role}] System prompt initialized ({len(self.sys_prompt)} chars)")
+            if self.role == "model_responder":
+                print(f"[{self.role}] System prompt preview: {self.sys_prompt[:200]}...")
         else:
             # Append new user message
             self.history.append(HumanMessage(content=prompt))
@@ -224,8 +228,19 @@ class ModelOpenAIStandard(Model):
                 del self.history[1:i]
 
         try:
-            # Generate response
-            turn_response = self.model.invoke(self.history)
+            # Generate response with max_tokens constraint
+            # Debug: Log generation parameters
+            print(f"[{self.role}] Generating with max_tokens={generate_cfg.max_new_tokens}")
+
+            turn_response = self.model.invoke(
+                self.history,
+                max_tokens=generate_cfg.max_new_tokens
+            )
+
+            # Debug: Log response length
+            response_tokens = self._get_num_tokens(turn_response.content)
+            print(f"[{self.role}] Response generated: {response_tokens} tokens, {len(turn_response.content)} chars")
+
         except Exception as e:
             print(f"Error generating response: {e}")
             return None, None
