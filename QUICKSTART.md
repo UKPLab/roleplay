@@ -58,7 +58,7 @@ python -m urartu \
 ```
 
 ### Быстрый тест (ограниченный датасет)
-Отредактируйте `llm_roleplay/configs/action_config/psychology_safety.yaml`:
+Отредактируйте `llm_roleplay/configs_andreii/psychology_safety.yaml`:
 
 ```yaml
 datasets:

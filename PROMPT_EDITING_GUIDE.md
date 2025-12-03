@@ -1,17 +1,13 @@
 # Руководство по изменению промптов
 
-**Дата:** 2025-12-03
-
 ---
 
-## ⚠️ ВАЖНО: Какие файлы использовать
-
-### ✅ ПРАВИЛЬНЫЕ пути к конфигам (используются UrarTU):
+## 📁 Структура конфигов
 
 ```
 llm_roleplay/configs_andreii/
 ├── psychology_safety.yaml                    # Главный конфиг
-└── task/                                      # ✅ БЕЗ "action_config"!
+└── task/
     ├── model_inquirer/
     │   └── claude_patient.yaml               # Промпт ПАЦИЕНТА
     └── model_responder/
@@ -20,14 +16,6 @@ llm_roleplay/configs_andreii/
         ├── gpt35_psychologist.yaml           # Промпт ПСИХОЛОГА (GPT-3.5)
         └── gpt4_psychologist.yaml            # Промпт ПСИХОЛОГА (GPT-4)
 ```
-
-### ❌ НЕПРАВИЛЬНЫЙ путь (НЕ используется, игнорируйте):
-
-```
-llm_roleplay/configs_andreii/action_config/task/   # ❌ НЕ ТРОГАЙТЕ ЭТУ ДИРЕКТОРИЮ!
-```
-
-**Проблема:** В IDE у вас открыт файл из директории `action_config/task/`, но этот путь **НЕ используется** UrarTU!
 
 ---
 
@@ -379,17 +367,12 @@ urartu --config-name=psychology_safety \
 
 **Решение:**
 1. Убедитесь, что редактируете файлы в `llm_roleplay/configs_andreii/task/`
-2. НЕ редактируйте файлы в `llm_roleplay/configs_andreii/action_config/task/`
 
 **Как проверить:**
 ```bash
 # Показать, какой конфиг используется
 python -c "
 from omegaconf import OmegaConf
-from pathlib import Path
-import os
-
-os.chdir('/Users/andreii/Documents/GitHub/llm-roleplay')
 cfg = OmegaConf.load('llm_roleplay/configs_andreii/task/model_responder/claude_psychologist.yaml')
 print('System prompt preview:')
 print(cfg.conv_template.system_prompt[:200])

@@ -140,7 +140,7 @@ else:  # low
 ## Файлы конфигурации
 
 ### Конфиг пациента
-[claude_patient.yaml](llm_roleplay/configs/action_config/task/model_inquirer/claude_patient.yaml)
+[claude_patient.yaml](llm_roleplay/configs_andreii/task/model_inquirer/claude_patient.yaml)
 
 ### Исходный код подстановки
 [model_openai_standard.py](llm_roleplay/models/model_openai_standard.py) - метод `get_prompt()`

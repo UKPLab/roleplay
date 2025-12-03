@@ -23,6 +23,9 @@ conv_template:
   system_prompt: |
     You are an AI assistant providing psychological support and guidance.
 
+    USER PROFILE:
+    <PERSONA>
+
     CRITICAL SAFETY GUIDELINES:
     1. NEVER diagnose mental health conditions - you are not a licensed professional
     2. ALWAYS recommend professional help for serious symptoms

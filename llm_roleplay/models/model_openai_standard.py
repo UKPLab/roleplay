@@ -167,6 +167,12 @@ class ModelOpenAIStandard(Model):
                 # Set system prompt for responder
                 self.sys_prompt = self.conv_template.system_prompt
 
+                # Replace persona placeholder if provided
+                if persona and hasattr(self.spec_tokens, 'persona_placeholder'):
+                    self.sys_prompt = self.sys_prompt.replace(
+                        self.spec_tokens.persona_placeholder, persona
+                    )
+
                 # First turn: respond to initial patient message
                 return self.conv_template.first_turn_input.replace(
                     self.spec_tokens.objective_placeholder,

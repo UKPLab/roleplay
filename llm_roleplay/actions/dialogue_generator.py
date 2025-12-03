@@ -237,7 +237,9 @@ class DialogueGenerator(Action):
                         # ------------------------------------------ Responder Model ------------------------------------------
 
                         responder_prompt = self.model_responder.get_prompt(
-                            turn=turn, response_msg=inquirer_output_extract
+                            turn=turn,
+                            response_msg=inquirer_output_extract,
+                            persona=persona,  # Pass persona to responder for context about the user
                         )
 
                         self.track(
@@ -313,7 +315,141 @@ class DialogueGenerator(Action):
                 with jsonlines.open(self.records_dir.joinpath(f"{self.cfg.seed}.jsonl"), mode="a") as writer:
                     writer.write(dialog_record)
 
+                # Сохранение диалога в текстовый файл
+                self._save_dialog_as_text(dialog_record, idx, persona_hash)
+
+        # Сохранение итогового отчёта
+        self._save_summary_report()
+
         return self.records_dir
+
+    def _save_dialog_as_text(self, dialog_record: dict, sample_idx: int, persona_hash: str):
+        """
+        Сохраняет диалог в читаемый текстовый файл с подсчётом символов.
+        """
+        # Создаём имя файла
+        symptom_id = dialog_record.get('symptom_id', sample_idx)
+        filename = f"dialog_s{symptom_id}_p{persona_hash[:8]}.txt"
+        filepath = self.records_dir.joinpath(filename)
+
+        # Формируем текст диалога
+        lines = []
+        lines.append("=" * 70)
+        lines.append("DIALOGUE TRANSCRIPT")
+        lines.append("=" * 70)
+        lines.append("")
+
+        # Метаданные
+        lines.append("METADATA:")
+        lines.append(f"  Symptom ID: {dialog_record.get('symptom_id', 'N/A')}")
+        lines.append(f"  Category: {dialog_record.get('symptom_category', 'N/A')}")
+        lines.append(f"  Severity: {dialog_record.get('symptom_severity', 'N/A')}")
+        lines.append(f"  Patient Model: {dialog_record.get('model_inquirer_name', 'N/A')}")
+        lines.append(f"  Therapist Model: {dialog_record.get('model_responder_name', 'N/A')}")
+        lines.append(f"  Number of Turns: {dialog_record.get('num_turns', 0)}")
+        lines.append("")
+
+        lines.append("PERSONA:")
+        lines.append(f"  {dialog_record.get('persona', 'N/A')}")
+        lines.append("")
+
+        lines.append("-" * 70)
+        lines.append("DIALOGUE:")
+        lines.append("-" * 70)
+        lines.append("")
+
+        # Диалог
+        dialog_text_only = []
+        for turn_data in dialog_record.get('dialog', []):
+            turn_num = turn_data.get('turn', 0)
+            patient_msg = turn_data.get('model_inquirer', '')
+            therapist_msg = turn_data.get('model_responder', '')
+
+            lines.append(f"[Turn {turn_num}]")
+            lines.append(f"PATIENT: {patient_msg}")
+            lines.append("")
+            lines.append(f"THERAPIST: {therapist_msg}")
+            lines.append("")
+            lines.append("")
+
+            dialog_text_only.append(patient_msg)
+            dialog_text_only.append(therapist_msg)
+
+        # Статистика
+        full_dialog_text = "\n".join(dialog_text_only)
+        char_count = len(full_dialog_text)
+        word_count = len(full_dialog_text.split())
+
+        lines.append("=" * 70)
+        lines.append("STATISTICS:")
+        lines.append(f"  Total Characters: {char_count:,}")
+        lines.append(f"  Total Words: {word_count:,}")
+        lines.append(f"  Total Turns: {dialog_record.get('num_turns', 0)}")
+        lines.append("=" * 70)
+
+        # Записываем в файл
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write("\n".join(lines))
+
+        print(f"[Saved] {filename} ({char_count:,} chars, {word_count:,} words)")
+
+    def _save_summary_report(self):
+        """
+        Сохраняет итоговый отчёт о всех диалогах.
+        """
+        import json
+        from datetime import datetime
+
+        summary_path = self.records_dir.joinpath("summary_report.txt")
+        jsonl_path = self.records_dir.joinpath(f"{self.cfg.seed}.jsonl")
+
+        if not jsonl_path.exists():
+            return
+
+        # Читаем все диалоги
+        total_chars = 0
+        total_words = 0
+        total_dialogs = 0
+        dialogs_by_severity = {}
+
+        with jsonlines.open(jsonl_path, mode='r') as reader:
+            for record in reader:
+                total_dialogs += 1
+                severity = record.get('symptom_severity', 'unknown')
+                dialogs_by_severity[severity] = dialogs_by_severity.get(severity, 0) + 1
+
+                for turn_data in record.get('dialog', []):
+                    patient_msg = turn_data.get('model_inquirer', '')
+                    therapist_msg = turn_data.get('model_responder', '')
+                    total_chars += len(patient_msg) + len(therapist_msg)
+                    total_words += len(patient_msg.split()) + len(therapist_msg.split())
+
+        # Формируем отчёт
+        lines = []
+        lines.append("=" * 70)
+        lines.append("SUMMARY REPORT")
+        lines.append("=" * 70)
+        lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append(f"Seed: {self.cfg.seed}")
+        lines.append("")
+        lines.append("STATISTICS:")
+        lines.append(f"  Total Dialogs: {total_dialogs}")
+        lines.append(f"  Total Characters: {total_chars:,}")
+        lines.append(f"  Total Words: {total_words:,}")
+        lines.append(f"  Average Chars per Dialog: {total_chars // max(total_dialogs, 1):,}")
+        lines.append("")
+        lines.append("DIALOGS BY SEVERITY:")
+        for severity, count in sorted(dialogs_by_severity.items()):
+            lines.append(f"  {severity}: {count}")
+        lines.append("=" * 70)
+
+        with open(summary_path, 'w', encoding='utf-8') as f:
+            f.write("\n".join(lines))
+
+        print(f"\n{'=' * 70}")
+        print(f"SUMMARY: {total_dialogs} dialogs, {total_chars:,} total characters, {total_words:,} total words")
+        print(f"Report saved to: {summary_path}")
+        print(f"{'=' * 70}")
 
 
 def main(cfg: DictConfig, aim_run: Run):
